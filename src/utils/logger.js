@@ -1,12 +1,15 @@
-const winston = require('winston');
-const path = require('path');
+// Simple console logger for development
+const logger = {
+  info: (message, ...args) => console.log(`[INFO] ${message}`, ...args),
+  error: (message, ...args) => console.error(`[ERROR] ${message}`, ...args),
+  warn: (message, ...args) => console.warn(`[WARN] ${message}`, ...args),
+  debug: (message, ...args) => console.log(`[DEBUG] ${message}`, ...args),
 
-// Create logs directory if it doesn't exist
-const fs = require('fs');
-const logsDir = path.join(__dirname, '../../logs');
-if (!fs.existsSync(logsDir)) {
-  fs.mkdirSync(logsDir, { recursive: true });
-}
+  // Stream for morgan middleware
+  stream: {
+    write: (message) => console.log(message.trim())
+  }
+};
 
 // Define log format with more detailed information
 const logFormat = winston.format.combine(

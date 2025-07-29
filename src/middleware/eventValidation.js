@@ -1,7 +1,7 @@
 const { body, param, query, validationResult } = require('express-validator');
 const { ValidationError } = require('./errorHandler');
 
-// Handle validation errors
+// Handle validation errors from express-validator
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -17,7 +17,7 @@ const handleValidationErrors = (req, res, next) => {
   next();
 };
 
-// Validation for creating events
+// Event creation validation
 const validateCreateEvent = [
   body('title')
     .trim()

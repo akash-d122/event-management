@@ -14,16 +14,9 @@ class DatabaseManager {
     }
     
     try {
-      // Create database pool
       this.pool = new DatabasePool();
-      
-      // Set up event listeners
       this.setupEventListeners();
-      
-      // Test connection
       await this.pool.testConnection();
-      
-      // Run migrations if needed
       await this.runMigrations();
       
       this.isInitialized = true;

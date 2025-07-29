@@ -1,6 +1,6 @@
 const logger = require('../utils/logger');
 
-// Base custom error class
+// Custom error classes
 class AppError extends Error {
   constructor(message, statusCode) {
     super(message);
@@ -12,7 +12,7 @@ class AppError extends Error {
   }
 }
 
-// Specific error classes for different scenarios
+
 class ValidationError extends AppError {
   constructor(message) {
     super(message, 400);

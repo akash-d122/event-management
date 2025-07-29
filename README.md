@@ -1,137 +1,112 @@
-# Event Management REST API
+# Event Management API
 
-A comprehensive Event Management REST API built with Node.js, Express, and PostgreSQL. Features user registration, event creation and management, capacity limits, and custom sorting capabilities.
+A REST API for managing events and user registrations. Built this to handle event creation, user registration, and capacity management with PostgreSQL as the backend.
 
 ## Features
 
-- **User Management**: Registration, authentication, and profile management
-- **Event Management**: Create, read, update, and delete events
-- **Capacity Management**: Set and enforce event capacity limits
-- **Authentication**: JWT-based authentication system
-- **Security**: Rate limiting, CORS, security headers, input validation
-- **Testing**: Comprehensive test suite with Jest and Supertest
-- **Logging**: Structured logging with Winston
+- Create and manage events with capacity limits (max 1000 per event)
+- User registration system with duplicate prevention
+- Event capacity enforcement to prevent overbooking
+- List upcoming events with custom sorting (by date, then location)
+- Event statistics and analytics
+- Business logic constraints for registration rules
 
 ## Tech Stack
 
-- **Backend**: Node.js, Express.js
-- **Database**: PostgreSQL
-- **Authentication**: JWT, bcrypt
-- **Testing**: Jest, Supertest
-- **Security**: Helmet, CORS, express-rate-limit
-- **Validation**: express-validator
-- **Logging**: Winston, Morgan
+- Node.js & Express.js
+- PostgreSQL database
+- JWT authentication
+- Jest for testing
 
-## Prerequisites
+## API Endpoints
 
-- Node.js (v14 or higher)
-- PostgreSQL (v12 or higher)
-- npm or yarn
+The API provides 6 main endpoints as required:
 
-## Installation
+1. **POST /api/events** - Create a new event
+2. **GET /api/events/:id** - Get event details with registered users
+3. **POST /api/events/:id/register** - Register user for an event
+4. **DELETE /api/events/:id/register/:userId** - Cancel user registration
+5. **GET /api/events/upcoming** - List future events (sorted by date, then location)
+6. **GET /api/events/:id/stats** - Get event statistics
 
-1. Clone the repository:
+## Setup
+
+### Prerequisites
+- Node.js 18+
+- PostgreSQL 13+
+
+### Installation
+
+1. Clone and install dependencies:
 ```bash
 git clone <repository-url>
-cd event-management
-```
-
-2. Install dependencies:
-```bash
+cd event-management-api
 npm install
 ```
 
-3. Set up environment variables:
-```bash
-cp .env.example .env
-# Edit .env with your PostgreSQL configuration
+2. Create `.env` file:
+```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=event_management
+DB_USER=your_username
+DB_PASSWORD=your_password
+PORT=3000
+JWT_SECRET=your-secret-key
 ```
 
-4. Set up PostgreSQL database:
+3. Setup database:
 ```bash
-# Create database
-createdb event_management
-
-# Initialize database tables
 npm run setup-db
+npm run migrate:up
 ```
 
-5. Run the application:
+4. Start the server:
 ```bash
-# Development mode (with auto-reload)
-npm run dev
-
-# Production mode
-npm start
+npm run dev  # development
+npm start    # production
 ```
 
-The API will be available at `http://localhost:3000`
+Server runs at `http://localhost:3000`
+
+## Database Schema
+
+The system uses three main tables:
+
+**Users** - Basic user information
+- id, name, email, password_hash, created_at
+
+**Events** - Event details with capacity limits
+- id, title, description, date_time, location, capacity (max 1000), created_by
+
+**Registrations** - Many-to-many relationship between users and events
+- user_id, event_id, registered_at, status
+
+## Business Logic
+
+Key constraints implemented:
+- Events have capacity limits (1-1000 users)
+- No duplicate registrations allowed
+- Can't register for past events
+- Custom sorting: upcoming events by date ascending, then location alphabetically
+- Registration/cancellation only for future events
 
 ## Testing
 
 ```bash
-# Run all tests
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run tests with coverage
-npm run test:coverage
+npm test  # Run basic tests
 ```
-
-## API Documentation
-
-For detailed API documentation including request/response formats, authentication, and examples, see [API_DOCUMENTATION.md](./API_DOCUMENTATION.md).
-
-### Quick Reference
-
-**Base URL:** `http://localhost:3000/api`
-
-**Authentication Endpoints:**
-- `POST /api/auth/register` - Register a new user
-- `POST /api/auth/login` - Login user
-- `GET /api/auth/profile` - Get user profile (authenticated)
-- `PUT /api/auth/profile` - Update user profile (authenticated)
-
-**Event Endpoints:**
-- `GET /api/events` - Get all events (with pagination and sorting)
-- `GET /api/events/:id` - Get specific event
-- `POST /api/events` - Create new event (authenticated)
-- `PUT /api/events/:id` - Update event (authenticated, owner only)
-- `DELETE /api/events/:id` - Delete event (authenticated, owner only)
-- `POST /api/events/:id/register` - Register for event (authenticated)
-- `DELETE /api/events/:id/unregister` - Unregister from event (authenticated)
-
-**User Endpoints:**
-- `GET /api/users/profile` - Get user profile (authenticated)
-- `PUT /api/users/profile` - Update user profile (authenticated)
-- `GET /api/users/events` - Get user's created events (authenticated)
-- `GET /api/users/registrations` - Get user's event registrations (authenticated)
 
 ## Project Structure
 
 ```
 src/
-├── config/          # Configuration files
-├── controllers/     # Route controllers
-├── middleware/      # Custom middleware
-├── models/          # Database models
-├── routes/          # API routes
-├── utils/           # Utility functions
-└── app.js          # Application entry point
-tests/              # Test files
+├── controllers/     # API endpoint logic
+├── middleware/      # Validation and auth
+├── routes/          # Route definitions
+├── config/          # Database config
+└── app.js          # Main application
+database/
+├── schema/          # SQL table definitions
+└── config/          # DB connection setup
 ```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Ensure all tests pass
-6. Submit a pull request
-
-## License
-
-ISC

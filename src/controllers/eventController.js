@@ -20,24 +20,17 @@ class EventController {
     }
   }
 
-  // POST /api/events - Create event with capacity validation
+  // Create a new event
   createEvent = catchAsync(async (req, res) => {
     await this.initialize();
 
     const { title, description, date_time, location, capacity } = req.body;
-    const created_by = req.user.id; // From authentication middleware
+    const created_by = req.user.id;
 
-    logger.logUserAction('create_event_attempt', created_by, {
-      title,
-      date_time,
-      capacity,
-      location
-    });
+
 
     try {
-      // Step 1: Validate input data (already done by middleware)
-
-      // Step 2: Additional business logic validation
+      // Business logic validation
       const eventDate = new Date(date_time);
       const now = new Date();
 
@@ -45,7 +38,7 @@ class EventController {
         throw new BusinessLogicError('Event date must be in the future');
       }
 
-      // Step 3: Check for conflicting events (same user, overlapping time)
+      // Check for conflicting events (same user, overlapping time within 1 hour)
       const conflictCheckResult = await this.pool.query(`
         SELECT id, title, date_time
         FROM events
@@ -56,18 +49,12 @@ class EventController {
 
       if (conflictCheckResult.rows.length > 0) {
         const conflictingEvent = conflictCheckResult.rows[0];
-        logger.logBusinessLogic('event_creation_conflict', {
-          user_id: created_by,
-          conflicting_event_id: conflictingEvent.id,
-          conflicting_event_title: conflictingEvent.title
-        });
-
         throw new ConflictError(
           `You have another event "${conflictingEvent.title}" scheduled within 1 hour of this time`
         );
       }
 
-      // Step 4: Create the event using transaction
+      // Create the event
       const result = await this.pool.withTransaction(async (client) => {
         const insertResult = await client.query(`
           INSERT INTO events (title, description, date_time, location, capacity, created_by)
@@ -78,18 +65,10 @@ class EventController {
 
         const event = insertResult.rows[0];
 
-        // Log successful creation
-        logger.logUserAction('create_event_success', created_by, {
-          event_id: event.id,
-          title: event.title,
-          capacity: event.capacity,
-          date_time: event.date_time
-        });
-
         return event;
       });
 
-      // Step 5: Return success response
+      // Return success response
       res.status(201).json({
         success: true,
         message: 'Event created successfully',
@@ -104,11 +83,7 @@ class EventController {
       });
 
     } catch (error) {
-      logger.logUserAction('create_event_error', created_by, {
-        error: error.message,
-        title,
-        capacity
-      });
+
 
       // Re-throw known errors, wrap unknown ones
       if (error instanceof ValidationError ||
@@ -139,7 +114,7 @@ class EventController {
     const eventId = req.params.id;
     const requestingUserId = req.user?.id; // Optional authentication
 
-    logger.logAPIRequest('GET', `/api/events/${eventId}`, null, null, requestingUserId);
+
 
     try {
       // Step 1: Validate event exists and get details
@@ -228,12 +203,8 @@ class EventController {
 
     const eventId = req.params.id;
     const userId = req.body.user_id || req.user.id; // Allow admin to register others
-    const requestingUserId = req.user.id;
 
-    logger.logUserAction('event_registration_attempt', requestingUserId, {
-      event_id: eventId,
-      target_user_id: userId
-    });
+
 
     try {
       // Step 1: Validate input data (already done by middleware)
@@ -258,12 +229,7 @@ class EventController {
 
       // Step 3: Verify event capacity is not exceeded
       if (event.current_registrations >= event.capacity) {
-        logger.logBusinessLogic('registration_capacity_exceeded', {
-          event_id: eventId,
-          user_id: userId,
-          current_registrations: event.current_registrations,
-          capacity: event.capacity
-        });
+
 
         throw new BusinessLogicError('Event has reached maximum capacity');
       }
@@ -287,11 +253,7 @@ class EventController {
             RETURNING id, registered_at
           `, [registration.id]);
 
-          logger.logUserAction('event_registration_reactivated', requestingUserId, {
-            event_id: eventId,
-            user_id: userId,
-            registration_id: registration.id
-          });
+
 
           return res.status(200).json({
             success: true,
@@ -324,12 +286,7 @@ class EventController {
         }
       }
 
-      // Step 6: Log successful registration
-      logger.logUserAction('event_registration_success', requestingUserId, {
-        event_id: eventId,
-        user_id: userId,
-        registration_id: registrationResult.registration_id
-      });
+      // Registration successful
 
       // Step 7: Return appropriate response
       res.status(201).json({
@@ -354,11 +311,7 @@ class EventController {
       });
 
     } catch (error) {
-      logger.logUserAction('event_registration_error', requestingUserId, {
-        event_id: eventId,
-        user_id: userId,
-        error: error.message
-      });
+
 
       // Re-throw known errors
       if (error instanceof ValidationError ||
@@ -381,10 +334,7 @@ class EventController {
     const targetUserId = req.params.userId;
     const requestingUserId = req.user.id;
 
-    logger.logUserAction('event_unregistration_attempt', requestingUserId, {
-      event_id: eventId,
-      target_user_id: targetUserId
-    });
+
 
     try {
       // Step 1: Validate permissions (user can only cancel their own registration or admin)
@@ -423,11 +373,7 @@ class EventController {
         }
       }
 
-      // Step 5: Log successful cancellation
-      logger.logUserAction('event_unregistration_success', requestingUserId, {
-        event_id: eventId,
-        target_user_id: targetUserId
-      });
+      // Cancellation successful
 
       // Step 6: Return success response
       res.status(200).json({
@@ -443,11 +389,7 @@ class EventController {
       });
 
     } catch (error) {
-      logger.logUserAction('event_unregistration_error', requestingUserId, {
-        event_id: eventId,
-        target_user_id: targetUserId,
-        error: error.message
-      });
+
 
       if (error instanceof ValidationError ||
           error instanceof NotFoundError ||
@@ -475,7 +417,7 @@ class EventController {
       date_to
     } = req.query;
 
-    logger.logAPIRequest('GET', '/api/events/upcoming', null, null, req.user?.id);
+
 
     try {
       // Build dynamic WHERE clause
@@ -601,12 +543,11 @@ class EventController {
     await this.initialize();
 
     const eventId = req.params.id;
-    const requestingUserId = req.user?.id;
 
-    logger.logAPIRequest('GET', `/api/events/${eventId}/stats`, null, null, requestingUserId);
+
 
     try {
-      // Step 1: Check if event exists
+      // Check if event exists
       const eventResult = await this.pool.query(`
         SELECT id, title, date_time, capacity, current_registrations, created_by, is_active
         FROM events
@@ -619,10 +560,10 @@ class EventController {
 
       const event = eventResult.rows[0];
 
-      // Step 2: Get comprehensive statistics using database function
+      // Get comprehensive statistics using database function
       const statsResult = await this.pool.getEventStats(eventId);
 
-      // Step 3: Get registration timeline (hourly breakdown)
+      // Get registration timeline (hourly breakdown)
       const timelineResult = await this.pool.query(`
         SELECT
           DATE_TRUNC('hour', registered_at) as hour,
