@@ -1,0 +1,49 @@
+{
+  "name": "event-management-database",
+  "version": "1.0.0",
+  "description": "PostgreSQL database schema and management for Event Management API",
+  "main": "config/database.js",
+  "scripts": {
+    "migrate": "node cli/migrate.js",
+    "migrate:up": "node cli/migrate.js up",
+    "migrate:down": "node cli/migrate.js down",
+    "migrate:status": "node cli/migrate.js status",
+    "migrate:create": "node cli/migrate.js create",
+    "migrate:validate": "node cli/migrate.js validate",
+    "migrate:reset": "node cli/migrate.js reset",
+    "db:setup": "npm run migrate:up",
+    "db:reset": "npm run migrate:reset --confirm",
+    "db:status": "npm run migrate:status",
+    "db:validate": "npm run migrate:validate",
+    "test:connection": "node -e \"require('./config/database').databaseManager.initialize().then(() => console.log('✅ Connection successful')).catch(err => { console.error('❌ Connection failed:', err.message); process.exit(1); })\"",
+    "maintenance:stats": "psql $DATABASE_URL -c \"SELECT update_table_statistics();\"",
+    "maintenance:indexes": "psql $DATABASE_URL -c \"SELECT * FROM get_index_usage_stats();\"",
+    "maintenance:unused": "psql $DATABASE_URL -c \"SELECT * FROM get_unused_indexes();\"",
+    "maintenance:rules": "psql $DATABASE_URL -c \"SELECT * FROM validate_business_rules();\"",
+    "maintenance:cleanup": "psql $DATABASE_URL -c \"SELECT cleanup_audit_logs(90);\""
+  },
+  "keywords": [
+    "postgresql",
+    "database",
+    "migrations",
+    "event-management",
+    "connection-pooling"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "pg": "^8.11.0"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-org/event-management-api.git",
+    "directory": "database"
+  }
+}
